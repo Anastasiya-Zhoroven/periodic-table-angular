@@ -1,0 +1,5 @@
+td.mat-mdc-cell:hover {
+    border: 2px solid indigo;
+    padding: 0 14px;
+    border-top: 1px solid indigo;
+}
