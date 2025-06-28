@@ -26,9 +26,15 @@ import { NgIf } from '@angular/common';
 })
 export class PeriodicTable implements OnInit {
   displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
+  
   private tableService = inject(PeriodicTableService);
   private tableStore = inject(PeriodicTableStore);
+  
   private dialog = inject(MatDialog);
+
+  private filterInput = signal('');       
+  private filterQuery = signal('');       
+  private debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
   @ViewChild('editDialog') editDialogRef!: TemplateRef<any>;
   dialogRef: any;
@@ -36,7 +42,19 @@ export class PeriodicTable implements OnInit {
   editedValue: any = '';
   editedField: string = '';
 
-  elements = computed(() => this.tableStore.elements());
+  elements = computed(() => {
+    const query = this.filterQuery().toLowerCase();
+    const data = this.tableStore.elements();
+  
+    if (!data || !query) return data;
+  
+    return data.filter(el =>
+      Object.values(el)
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    );
+  })
 
   loading = computed(() => this.tableStore.elements() === null);
 
@@ -58,10 +76,29 @@ export class PeriodicTable implements OnInit {
 
   saveEdit(): void {
     if (this.currentElement && this.editedField) {
-      this.currentElement[this.editedField] = this.editedValue;
-      const updatedElements = [...(this.elements() ?? [])];
-      this.tableStore.setElements(updatedElements);
+      const updated = (this.tableStore.elements() ?? []).map(el =>
+        el === this.currentElement
+          ? { ...el, [this.editedField]: this.editedValue }
+          : el
+      );
+      this.tableStore.setElements(updated);
     }
+  
     this.dialogRef.close();
   }
+
+  onFilterInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+    this.filterInput.set(value);
+  
+    if (this.debounceTimeout) {
+      clearTimeout(this.debounceTimeout);
+    }
+  
+    this.debounceTimeout = setTimeout(() => {
+      this.filterQuery.set(this.filterInput());
+    }, 2000);
+  }
+
 }
