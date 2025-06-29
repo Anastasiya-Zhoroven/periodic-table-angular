@@ -1,19 +1,39 @@
-import { Injectable, signal } from '@angular/core';
-import { PeriodicElement } from '../interfaces/periodicElement.interface';
+import { computed, Injectable, Signal, signal, WritableSignal } from '@angular/core';
+import { PeriodicElement, PeriodicElementKey, PeriodicElementValue } from '../interfaces/periodicElement.interface';
 
-@Injectable({ 
-    providedIn: 'root' 
+@Injectable({
+  providedIn: 'root'
 })
-
 export class PeriodicTableStore {
-  private elementsSignal = signal<PeriodicElement[] | null>(null);
-  readonly elements = this.elementsSignal.asReadonly();
+  // State
+  elements: WritableSignal<PeriodicElement[] | null> = signal<PeriodicElement[] | null>(null);
+  query: WritableSignal<string | null> = signal<string | null>('');
 
-  setElements(data: PeriodicElement[]) {
-    this.elementsSignal.set(data);
+  // Computed
+  loading: Signal<boolean> = computed(() => this.elements() === null);
+
+  filteredElements: Signal<PeriodicElement[]> = computed(() => {
+    const query: string | undefined = this.query()?.toLowerCase();
+    const elements: PeriodicElement[] = this.elements() ?? [];
+    if (query) {
+      return elements.filter(element => Object.values(element).join(' ').toLowerCase().includes(query));
+    }
+    return elements;
+  });
+
+  // Methods
+  setElements(elements: PeriodicElement[]): void {
+    this.elements.set(elements);
   }
 
-  clear() {
-    this.elementsSignal.set(null);
+  setQuery(value: string | null): void {
+    this.query.set(value);
+  }
+
+  updateElement(editedElement: PeriodicElement, field: PeriodicElementKey, value: PeriodicElementValue): void {
+    const updated: PeriodicElement[] = (this.elements() ?? []).map(element =>
+      element === editedElement ? { ...editedElement, [field]: value } : element
+    );
+    this.setElements(updated);
   }
 }
