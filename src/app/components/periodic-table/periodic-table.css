@@ -1,0 +1,6 @@
+td.mat-mdc-cell:hover {
+    border: 2px solid #015cbb;
+    padding: 0 14px;
+    border-top: 1px solid #015cbb;
+    cursor: pointer;
+}
