@@ -1,10 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, output, OutputEmitterRef } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
-import { PeriodicTableStore } from '../../stores/periodic-table.store';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-filter-input',
@@ -14,14 +14,15 @@ import { PeriodicTableStore } from '../../stores/periodic-table.store';
   styleUrl: './filter-input.css'
 })
 export class FilterInput {
-  private tableStore: PeriodicTableStore = inject(PeriodicTableStore);
   filterControl: FormControl = new FormControl('');
+  filterChange: OutputEmitterRef<string> = output<string>();
 
   constructor() {
     this.filterControl.valueChanges
       .pipe(debounceTime(2000), distinctUntilChanged())
+      .pipe(takeUntilDestroyed())
       .subscribe(value => {
-        this.tableStore.setQuery(value);
+        this.filterChange.emit(value?.toLowerCase() || '');
       });
   }
 }
